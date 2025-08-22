@@ -1,0 +1,11 @@
+Package: *
+Pin: release o=kali
+Pin-Priority: 50
+
+Package: kali-*
+Pin: release o=kali
+Pin-Priority: 990
+
+Package: kali-themes kali-wallpapers* plymouth-theme-kali
+Pin: release o=kali
+Pin-Priority: 990

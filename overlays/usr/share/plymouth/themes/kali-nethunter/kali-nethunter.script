@@ -1,0 +1,76 @@
+# Kali NetHunter Plymouth Script
+
+# Load the logo image
+kali_logo_image = Image("kali-logo.png");
+screen_ratio = Window.GetHeight() / Window.GetWidth();
+kali_logo_image_ratio = kali_logo_image.GetHeight() / kali_logo_image.GetWidth();
+
+# Scale the logo to fit the screen
+if (screen_ratio > kali_logo_image_ratio)
+{
+  scale_factor = Window.GetWidth() / kali_logo_image.GetWidth() * 0.4;
+}
+else
+{
+  scale_factor = Window.GetHeight() / kali_logo_image.GetHeight() * 0.4;
+}
+
+scaled_kali_logo_width = kali_logo_image.GetWidth() * scale_factor;
+scaled_kali_logo_height = kali_logo_image.GetHeight() * scale_factor;
+
+# Create the sprite
+kali_logo_sprite = Sprite(kali_logo_image);
+
+# Center the logo on the screen
+kali_logo_sprite.SetX(Window.GetWidth() / 2 - scaled_kali_logo_width / 2);
+kali_logo_sprite.SetY(Window.GetHeight() / 2 - scaled_kali_logo_height / 2);
+
+# Scale the logo
+kali_logo_sprite.SetOpacity(1);
+kali_logo_sprite.SetScale(scale_factor);
+
+# Progress bar settings
+progress_bar_height = 3;
+progress_bar_width = Window.GetWidth() * 0.3;
+progress_bar_x = Window.GetWidth() / 2 - progress_bar_width / 2;
+progress_bar_y = Window.GetHeight() / 2 + scaled_kali_logo_height / 2 + 30;
+
+# Colors
+bar_color.red = 0.5;
+bar_color.green = 0.0;
+bar_color.blue = 0.0;
+bar_color.alpha = 1.0;
+
+progress = 0;
+
+fun refresh_callback ()
+{
+  progress += 0.01;
+  if (progress > 1) progress = 0;
+  
+  # Draw progress bar background
+  Window.SetBackgroundTopColor(0, 0, 0);
+  Window.SetBackgroundBottomColor(0, 0, 0);
+  
+  # Draw progress bar
+  draw_bar(progress_bar_x, progress_bar_y, progress_bar_width, progress_bar_height, bar_color.red, bar_color.green, bar_color.blue, bar_color.alpha, progress);
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+fun draw_bar(x, y, width, height, red, green, blue, alpha, progress)
+{
+  progress_width = width * progress;
+  
+  # Draw progress
+  rect = Rectangle(x, y, progress_width, height);
+  rect.SetColor(red, green, blue, alpha);
+}
+
+Plymouth.SetBootProgressFunction(
+  fun(duration, progress)
+  {
+    # Set the progress value from 0 to 1
+    global.progress = progress;
+  }
+);

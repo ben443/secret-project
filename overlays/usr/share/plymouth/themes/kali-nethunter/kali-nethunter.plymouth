@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Kali NetHunter
+Description=Kali NetHunter Plymouth Theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/kali-nethunter
+ScriptFile=/usr/share/plymouth/themes/kali-nethunter/kali-nethunter.script

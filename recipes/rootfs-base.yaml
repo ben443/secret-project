@@ -1,0 +1,108 @@
+{{- $architecture := or .architecture "arm64" -}}
+{{- $suite := or .suite "bookworm" -}}
+
+architecture: {{ $architecture }}
+
+actions:
+  - action: debootstrap
+    suite: {{ $suite }}
+    components:
+      - main
+      - contrib
+      - non-free
+      - non-free-firmware
+    mirror: http://deb.debian.org/debian
+    variant: minbase
+
+  - action: apt
+    description: Install essential packages
+    packages:
+      - systemd
+      - systemd-sysv
+      - udev
+      - kmod
+      - util-linux
+      - mount
+      - keyboard-configuration
+      - console-setup
+      - locales
+      - tzdata
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - wget
+      - curl
+      - vim
+      - nano
+      - htop
+      - psmisc
+      - procps
+      - net-tools
+      - iproute2
+      - iputils-ping
+      - dnsutils
+      - openssh-server
+      - sudo
+      - bash-completion
+      - man-db
+      - less
+      - file
+      - rsync
+      - tar
+      - gzip
+      - bzip2
+      - xz-utils
+      - unzip
+      - git
+
+  - action: run
+    description: Configure base system
+    chroot: true
+    command: |
+      # Set up locales
+      echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+      locale-gen
+      echo "LANG=en_US.UTF-8" > /etc/default/locale
+      
+      # Set timezone
+      ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+      
+      # Configure hostname
+      echo "droidian-kali" > /etc/hostname
+      
+      # Configure hosts file
+      cat > /etc/hosts << EOF
+      127.0.0.1 localhost
+      127.0.1.1 droidian-kali
+      ::1 localhost ip6-localhost ip6-loopback
+      EOF
+      
+      # Enable systemd services
+      systemctl enable systemd-networkd
+      systemctl enable systemd-resolved
+      
+      # Configure DNS
+      ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+  - action: run
+    description: Set up package manager configuration
+    chroot: true
+    command: |
+      # Configure APT
+      cat > /etc/apt/apt.conf.d/01-mobile << 'EOF'
+      APT::Install-Recommends "false";
+      APT::Install-Suggests "false";
+      APT::Get::Assume-Yes "true";
+      Dpkg::Options {
+        "--force-confdef";
+        "--force-confold";
+      }
+      EOF
+      
+      # Configure package priorities
+      cat > /etc/apt/preferences.d/base << 'EOF'
+      Package: *
+      Pin: release o=Debian
+      Pin-Priority: 900
+      EOF

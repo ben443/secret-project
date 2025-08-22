@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=Kali Security Tools
+Comment=Penetration Testing and Security Tools
+Keywords=security;penetration;testing;hacking;kali;
+Icon=kali-menu
+Exec=kali-menu-mobile
+NoDisplay=false
+Terminal=false
+Type=Application
+Categories=System;Security;Network;
+StartupNotify=true
+MimeType=application/x-kali-tool;

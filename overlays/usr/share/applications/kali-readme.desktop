@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Kali Droidian README
+Comment=Information about Kali Droidian
+Exec=xdg-open /usr/share/kali/README.md
+Icon=kali-docs
+Terminal=false
+Type=Application
+Categories=Documentation;

@@ -1,0 +1,11 @@
+PRETTY_NAME="Droidian Kali Phosh"
+NAME="Droidian Kali"
+VERSION_ID="1.0"
+VERSION="1.0 (Kali Rolling)"
+VERSION_CODENAME="kali-rolling"
+ID=droidian
+ID_LIKE="debian kali"
+HOME_URL="https://droidian.org/"
+SUPPORT_URL="https://github.com/droidian-kali"
+BUG_REPORT_URL="https://github.com/droidian-kali/issues"
+LOGO=kali-menu

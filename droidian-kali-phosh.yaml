@@ -1,0 +1,239 @@
+{{- $architecture := or .architecture "arm64" -}}
+{{- $suite := or .suite "bookworm" -}}
+{{- $image := or .image "droidian-kali-phosh.img" -}}
+
+architecture: {{ $architecture }}
+
+actions:
+  - action: debootstrap
+    suite: {{ $suite }}
+    components:
+      - main
+      - contrib
+      - non-free
+      - non-free-firmware
+    mirror: https://deb.debian.org/debian
+    variant: minbase
+
+  - action: apt
+    description: Update package database
+    packages:
+      - ca-certificates
+      - gnupg
+      - wget
+      - curl
+
+  - action: run
+    description: Add Kali Linux GPG key using modern method
+    chroot: true
+    command: |
+      # Create keyring directory
+      mkdir -p /etc/apt/keyrings
+      
+      # Add Kali GPG key using modern method
+      wget -qO- https://archive.kali.org/archive-key.asc | gpg --dearmor > /etc/apt/keyrings/kali-archive.gpg
+      
+      # Add Kali repository with signed-by
+      echo "deb [signed-by=/etc/apt/keyrings/kali-archive.gpg] http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/kali.list
+
+  - action: run
+    description: Add Droidian GPG key and repository
+    chroot: true
+    command: |
+      # Add Droidian GPG key using modern method
+      wget -qO- https://repo.droidian.org/droidian.gpg | gpg --dearmor > /etc/apt/keyrings/droidian.gpg
+      
+      # Add Droidian repositories with signed-by
+      cat > /etc/apt/sources.list.d/droidian.list << EOF
+      deb [signed-by=/etc/apt/keyrings/droidian.gpg] https://repo.droidian.org/bookworm-nightlies bookworm main
+      deb [signed-by=/etc/apt/keyrings/droidian.gpg] https://repo.droidian.org/bookworm-nightlies-generic bookworm main
+      EOF
+
+  - action: apt
+    description: Update package lists after adding repositories
+    update: true
+
+  - action: apt
+    description: Install base system packages
+    packages:
+      - systemd
+      - systemd-sysv
+      - udev
+      - dbus
+      - networkd-dispatcher
+      - iproute2
+      - iputils-ping
+      - ifupdown
+      - isc-dhcp-client
+      - whiptail
+      - netbase
+      - ca-certificates
+      - fuse
+      - openssh-server
+      - nano
+      - psmisc
+      - htop
+
+  - action: apt
+    description: Install Droidian specific packages
+    packages:
+      - droidian-base-files
+      - adaptation-droidian-api28
+      - phosh
+      - phosh-mobile-settings
+      - calls
+      - chatty
+      - gnome-contacts
+      - gnome-software
+      - firefox-esr
+      - lxc-android-config
+
+  - action: apt
+    description: Install Kali Linux tools
+    packages:
+      - kali-menu
+      - kali-defaults
+      - kali-root-login
+      - kali-desktop-core
+      - kali-tools-top10
+      - metasploit-framework
+      - nmap
+      - aircrack-ng
+      - wireshark
+      - burpsuite
+      - sqlmap
+      - john
+      - hashcat
+      - hydra
+      - netcat-traditional
+      - tcpdump
+
+  - action: overlay
+    description: Apply custom configuration overlays
+    source: overlays
+
+  - action: run
+    description: Configure system settings
+    chroot: true
+    script: scripts/setup-system.sh
+
+  - action: run
+    description: Configure Kali specific settings
+    chroot: true
+    script: scripts/setup-kali.sh
+
+  - action: run
+    description: Configure Phosh and mobile interface
+    chroot: true
+    script: scripts/setup-phosh.sh
+
+  - action: run
+    description: Apply NetHunter theming
+    chroot: true
+    script: scripts/setup-theming.sh
+
+  - action: run
+    description: Clean up and finalize
+    chroot: true
+    command: |
+      # Clean package cache
+      apt-get clean
+      
+      # Remove temporary files
+      rm -rf /tmp/*
+      rm -rf /var/tmp/*
+      
+      # Clear bash history
+      history -c
+
+  - action: image-partition
+    imagename: {{ $image }}
+    imagesize: 8GB
+    partitiontype: msdos
+    mountpoints:
+      - mountpoint: /
+        partition: root
+    partitions:
+      - name: root
+        fs: ext4
+        start: 0%
+        end: 100%
+        flags: [ boot ]
+
+  - action: filesystem-deploy
+    description: Deploy filesystem to image
+
+  - action: run
+    description: Install bootloader
+    postprocess: true
+    command: echo "Bootloader installation would happen here for specific device"
+
+  - action: run
+    description: Configure system services and mobile optimizations
+    chroot: true
+    script: scripts/configure-mobile.sh
+
+  - action: overlay
+    description: Apply configuration overlays
+    source: overlays
+
+  - action: run
+    description: Create default user and configure permissions
+    chroot: true
+    command: |
+      # Create droidian user
+      useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev droidian
+      echo "droidian:droidian" | chpasswd
+      
+      # Create kali user for Kali-specific tools
+      useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev kali
+      echo "kali:kali" | chpasswd
+      
+      # Set up sudo without password for mobile convenience
+      echo "droidian ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      echo "kali ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+  - action: run
+    description: Final system configuration
+    chroot: true
+    command: |
+      # Clean package cache
+      apt-get clean
+      
+      # Update initramfs
+      update-initramfs -u
+      
+      # Enable essential services
+      systemctl enable NetworkManager
+      systemctl enable bluetooth
+      systemctl enable phosh
+      systemctl enable lxc@android
+      systemctl enable ssh
+
+  - action: image-partition
+    description: Create image with partitions
+    imagename: {{ $image }}
+    imagesize: 8GB
+    partitiontype: gpt
+    mountpoints:
+      - mountpoint: /
+        partition: root
+        options:
+          - rw
+    partitions:
+      - name: root
+        fs: ext4
+        start: 1MiB
+        end: 100%
+        flags:
+          - legacy_boot
+
+  - action: filesystem-deploy
+    description: Deploy root filesystem to image
+
+  - action: run
+    description: Install bootloader
+    command: |
+      # This would typically install a bootloader
+      # For Android devices, this is usually handled by fastboot
+      echo "Image creation completed. Use fastboot to flash to device."

@@ -1,0 +1,84 @@
+/* Kali NetHunter Pro Phosh-specific styling */
+
+/* Use Kali red for accents */
+@define-color accent_color #dd0000;
+@define-color accent_bg_color #aa0000;
+@define-color accent_fg_color #ffffff;
+
+/* Dark theme colors */
+@define-color bg_color #232729;
+@define-color fg_color #eeeeec;
+@define-color base_color #2d2d2d;
+@define-color text_color #ffffff;
+@define-color selected_bg_color @accent_bg_color;
+@define-color selected_fg_color #ffffff;
+@define-color tooltip_bg_color #2d2d2d;
+@define-color tooltip_fg_color #ffffff;
+
+/* Override specific Phosh elements */
+.phosh-lockscreen-pin {
+  border: 1px solid @accent_color;
+  background-color: alpha(@bg_color, 0.8);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.phosh-lockscreen-pin-pad-button {
+  border-radius: 50%;
+  background-color: alpha(@base_color, 0.8);
+  color: @text_color;
+  border: 1px solid alpha(@accent_color, 0.5);
+  font-size: 20pt;
+  padding: 12px;
+}
+
+.phosh-lockscreen-pin-pad-button:hover {
+  background-color: alpha(@accent_bg_color, 0.3);
+}
+
+.phosh-lockscreen-pin-pad-button:active {
+  background-color: alpha(@accent_bg_color, 0.5);
+}
+
+.phosh-osk {
+  background-color: alpha(@bg_color, 0.95);
+  border-top: 1px solid @accent_color;
+}
+
+.phosh-osk-key {
+  background-color: alpha(@base_color, 0.8);
+  color: @text_color;
+  border: 1px solid alpha(@accent_color, 0.3);
+  border-radius: 6px;
+}
+
+.phosh-osk-key:hover {
+  background-color: alpha(@accent_bg_color, 0.3);
+}
+
+.phosh-osk-key:active {
+  background-color: alpha(@accent_bg_color, 0.5);
+}
+
+.phosh-system-modal {
+  background-color: alpha(@bg_color, 0.9);
+  border: 1px solid @accent_color;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.phosh-power-menu-button {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: alpha(@base_color, 0.8);
+  color: @text_color;
+  margin: 6px;
+}
+
+.phosh-power-menu-button:hover {
+  background-color: alpha(@accent_bg_color, 0.3);
+}
+
+.phosh-power-menu-button:active {
+  background-color: alpha(@accent_bg_color, 0.5);
+}

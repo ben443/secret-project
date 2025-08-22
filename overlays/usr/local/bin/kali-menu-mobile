@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# Mobile-optimized Kali tools menu
+# Provides touch-friendly interface for Kali Linux tools
+
+# Check if running on mobile/touch interface
+if [ "$XDG_CURRENT_DESKTOP" = "Phosh" ] || [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+    MOBILE_MODE=true
+else
+    MOBILE_MODE=false
+fi
+
+# Function to launch tool with mobile-friendly terminal
+launch_tool() {
+    local tool=$1
+    local title=$2
+    
+    if [ "$MOBILE_MODE" = "true" ]; then
+        # Use mobile-optimized terminal settings
+        gnome-terminal --title="$title" --geometry=80x24 --zoom=1.2 -- bash -c "$tool; read -p 'Press Enter to continue...'"
+    else
+        # Standard terminal
+        gnome-terminal --title="$title" -- bash -c "$tool; read -p 'Press Enter to continue...'"
+    fi
+}
+
+# Create mobile-friendly menu using zenity
+while true; do
+    CHOICE=$(zenity --list --title="Kali Security Tools" \
+        --text="Select a security tool:" \
+        --width=400 --height=600 \
+        --column="Category" --column="Tool" \
+        "Information Gathering" "nmap - Network Scanner" \
+        "Information Gathering" "whatweb - Web Scanner" \
+        "Information Gathering" "theharvester - Email/Domain Info" \
+        "Vulnerability Analysis" "nikto - Web Vulnerability Scanner" \
+        "Vulnerability Analysis" "wpscan - WordPress Scanner" \
+        "Web Applications" "burpsuite - Web App Security" \
+        "Web Applications" "zaproxy - OWASP ZAP" \
+        "Database Assessment" "sqlmap - SQL Injection Tool" \
+        "Password Attacks" "hydra - Password Cracker" \
+        "Password Attacks" "john - John the Ripper" \
+        "Password Attacks" "hashcat - Advanced Password Recovery" \
+        "Wireless Attacks" "aircrack-ng - WiFi Security Testing" \
+        "Forensics" "wireshark - Network Protocol Analyzer" \
+        "Social Engineering" "maltego - Link Analysis" \
+        "System" "Terminal - Open Kali Terminal" \
+        "System" "Exit - Close Menu")
+    
+    if [ $? -ne 0 ]; then
+        break
+    fi
+    
+    case "$CHOICE" in
+        "nmap - Network Scanner")
+            launch_tool "nmap" "Nmap Network Scanner"
+            ;;
+        "whatweb - Web Scanner")
+            launch_tool "whatweb" "WhatWeb Scanner"
+            ;;
+        "theharvester - Email/Domain Info")
+            launch_tool "theharvester" "TheHarvester"
+            ;;
+        "nikto - Web Vulnerability Scanner")
+            launch_tool "nikto" "Nikto Web Scanner"
+            ;;
+        "wpscan - WordPress Scanner")
+            launch_tool "wpscan" "WPScan"
+            ;;
+        "burpsuite - Web App Security")
+            burpsuite &
+            ;;
+        "zaproxy - OWASP ZAP")
+            zaproxy &
+            ;;
+        "sqlmap - SQL Injection Tool")
+            launch_tool "sqlmap" "SQLMap"
+            ;;
+        "hydra - Password Cracker")
+            launch_tool "hydra" "Hydra"
+            ;;
+        "john - John the Ripper")
+            launch_tool "john" "John the Ripper"
+            ;;
+        "hashcat - Advanced Password Recovery")
+            launch_tool "hashcat" "Hashcat"
+            ;;
+        "aircrack-ng - WiFi Security Testing")
+            launch_tool "aircrack-ng" "Aircrack-ng"
+            ;;
+        "wireshark - Network Protocol Analyzer")
+            wireshark &
+            ;;
+        "maltego - Link Analysis")
+            maltego &
+            ;;
+        "Terminal - Open Kali Terminal")
+            if [ "$MOBILE_MODE" = "true" ]; then
+                gnome-terminal --geometry=80x24 --zoom=1.2
+            else
+                gnome-terminal
+            fi
+            ;;
+        "Exit - Close Menu")
+            break
+            ;;
+    esac
+done
