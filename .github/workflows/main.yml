@@ -23,6 +23,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Remove existing image file (prevents QEMU lock error)
+        run: rm -f ${{ github.event.inputs.image_name }}
+
       - name: Install build dependencies
         run: |
           sudo apt update
