@@ -2,46 +2,39 @@ name: Manual Image Build
 
 on:
   workflow_dispatch:
-    inputs:
-      architecture:
-        description: 'Architecture (e.g. arm64, armhf)'
-        required: false
-        default: 'arm64'
-      suite:
-        description: 'Debian suite (e.g. bookworm, bullseye)'
-        required: false
-        default: 'bookworm'
-      image_name:
-        description: 'Output image name'
-        required: false
-        default: 'droidian-kali-phosh.img'
 
 jobs:
-  build:
+  build-image:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Remove existing image file (prevents QEMU lock error)
-        run: rm -f ${{ github.event.inputs.image_name }}
-
-      - name: Install build dependencies
+      - name: Set up dependencies
         run: |
-          sudo apt update
-          sudo apt install -y debos qemu-user-static debootstrap
+          sudo apt-get update
+          sudo apt-get install -y qemu-utils debos
 
-      - name: Build image
+      # This step ensures no other process is locking the image file
+      - name: Ensure no lock on image
         run: |
-          sudo debos \
-            -t architecture:${{ github.event.inputs.architecture }} \
-            -t suite:${{ github.event.inputs.suite }} \
-            -t image:${{ github.event.inputs.image_name }} \
-            droidian-kali-phosh.yaml
+          fuser -k /home/runner/work/secret-project/secret-project/droidian-kali-phosh.img || true
+          rm -f /home/runner/work/secret-project/secret-project/droidian-kali-phosh.img.lock || true
+
+      - name: Build Droidian Kali Phosh image
+        run: |
+          /debos \
+            --artifactdir /home/runner/work/secret-project/secret-project \
+            --template-var architecture:arm64 \
+            --template-var suite:bookworm \
+            --template-var image:droidian-kali-phosh.img \
+            /home/runner/work/secret-project/secret-project/droidian-kali-phosh.yaml --internal-i
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.event.inputs.image_name }}
-          path: ${{ github.event.inputs.image_name }}
-          if-no-files-found: error
+          name: droidian-kali-phosh-img
+          path: /home/runner/work/secret-project/secret-project/droidian-kali-phosh.img
+
+      # (Optional) Add more steps as needed for your workflow
