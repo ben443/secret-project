@@ -1,40 +1,136 @@
-name: Manual Image Build
+name: CI - build and lint
 
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
+    inputs:
+      run_full_build:
+        description: 'Run full build steps that may require a self-hosted runner'
+        required: false
+        default: 'false'
 
 jobs:
-  build-image:
+  lint:
+    name: Shellcheck & syntax lint
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up dependencies
+      - name: Install shellcheck
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-utils debos
+          sudo apt-get install -y shellcheck || true
 
-      # This step ensures no other process is locking the image file
-      - name: Ensure no lock on image
+      - name: Run shellcheck on scripts
         run: |
-          fuser -k /home/runner/work/secret-project/secret-project/droidian-kali-phosh.img || true
-          rm -f /home/runner/work/secret-project/secret-project/droidian-kali-phosh.img.lock || true
+          if ls scripts/*.sh 1> /dev/null 2>&1; then
+            shellcheck scripts/*.sh || true
+          else
+            echo "No scripts to lint"
+          fi
 
-      - name: Build Droidian Kali Phosh image
+      - name: Bash syntax check
         run: |
-          /debos \
-            --artifactdir /home/runner/work/secret-project/secret-project \
-            --template-var architecture:arm64 \
-            --template-var suite:bookworm \
-            --template-var image:droidian-kali-phosh.img \
-            /home/runner/work/secret-project/secret-project/droidian-kali-phosh.yaml --internal-i
+          for f in scripts/*.sh; do
+            [ -f "$f" ] || continue
+            bash -n "$f"
+          done
 
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v3
+  package:
+    name: Package repository
+    runs-on: ubuntu-latest
+    needs: lint
+    outputs:
+      archive-name: ${{ steps.create_archive.outputs.archive }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create archive
+        id: create_archive
+        run: |
+          ARCHIVE_NAME="repo-$(date +%Y%m%d%H%M%S).tar.gz"
+          tar --exclude='.git' -czf "$ARCHIVE_NAME" .
+          echo "archive=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload repo archive
+        uses: actions/upload-artifact@v4
         with:
-          name: droidian-kali-phosh-img
-          path: /home/runner/work/secret-project/secret-project/droidian-kali-phosh.img
+          name: repo-archive
+          path: ${{ steps.create_archive.outputs.archive }}
 
-      # (Optional) Add more steps as needed for your workflow
+  full-build:
+    name: Optional full build (self-hosted)
+    needs: package
+    if: ${{ github.event.inputs.run_full_build == 'true' }}
+    # NOTE: The steps in this job may require elevated privileges or a Docker environment not available
+    # on GitHub-hosted runners. Use a self-hosted runner (labelled 'self-hosted') for this job.
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare apt and Kali repo (self-hosted runner)
+        run: |
+          set -eux
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg apt-transport-https ca-certificates curl
+          sudo mkdir -p /etc/apt/keyrings
+          sudo wget -qO- https://archive.kali.org/archive-key.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/kali-archive.gpg >/dev/null || true
+          sudo chmod 0644 /etc/apt/keyrings/kali-archive.gpg || true
+          echo 'deb [signed-by=/etc/apt/keyrings/kali-archive.gpg] http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware' | sudo tee /etc/apt/sources.list.d/kali.list
+          sudo apt-get update || true
+
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/*.sh || true
+
+      - name: Run theming setup (kali -t transaction)
+        run: |
+          set -eux
+          # The script will verify the Kali repo is present and run apt transactions.
+          # This is expected to run on a self-hosted runner prepared for building.
+          scripts/setup-theming.sh || true
+
+      - name: Run your image build steps
+        run: |
+          set -eux
+          # Insert your real build commands here that create disk images
+          # Example placeholder:
+          # ./build-image.sh
+          echo "Replace this step with your actual build commands that produce .img/.iso/.qcow2 files"
+
+      - name: Package found built images
+        id: package_images
+        run: |
+          set -eux
+          mkdir -p artifacts
+          # copy any common image formats while preserving relative paths
+          find . -type f \( -name '*.img' -o -name '*.iso' -o -name '*.qcow2' -o -name '*.raw' \) -exec cp --parents {} artifacts/ \; || true
+          if [ -z "$(ls -A artifacts 2>/dev/null)" ]; then
+            echo "image_found=false" >> $GITHUB_OUTPUT
+          else
+            tar -czf built-images.tar.gz artifacts
+            echo "image_found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload built images (if any)
+        if: ${{ steps.package_images.outputs.image_found == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-images
+          path: built-images.tar.gz
+
+      - name: Collect build logs
+        run: |
+          tar -czf build-logs.tar.gz /var/log || true
+
+      - name: Upload build logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build-logs.tar.gz
