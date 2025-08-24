@@ -1,9 +1,22 @@
+name: Build Droidian Kali Phosh Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
 jobs:
   build-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Set up unique image name
+        id: vars
+        run: |
+          echo "IMAGE_NAME=droidian-kali-phosh-${GITHUB_RUN_ID}.img" >> $GITHUB_ENV
 
       - name: Kill leftover QEMU/debos processes
         run: |
@@ -20,7 +33,7 @@ jobs:
             --artifactdir /home/runner/work/secret-project/secret-project \
             --template-var architecture:arm64 \
             --template-var suite:bookworm \
-            --template-var image:droidian-kali-phosh.img \
+            --template-var image:${IMAGE_NAME} \
             /home/runner/work/secret-project/secret-project/droidian-kali-phosh.yaml \
             --internal-image /dev/disk/by-fakemachine-label/fakedisk-0 \
             --internal-image /dev/disk/by-fakemachine-label/fakedisk-1
