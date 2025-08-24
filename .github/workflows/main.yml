@@ -1,44 +1,26 @@
-name: Droidian Kali Phosh Manual Build
-
-on:
-  workflow_dispatch:
-    inputs:
-      architecture:
-        description: 'Target architecture (arm64, armhf)'
-        required: false
-        default: 'arm64'
-      suite:
-        description: 'Debian suite (bookworm, bullseye, etc)'
-        required: false
-        default: 'bookworm'
-      image:
-        description: 'Output image file name'
-        required: false
-        default: 'droidian-kali-phosh.img'
-
 jobs:
-  build:
+  build-image:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install debos and dependencies
+      - name: Kill leftover QEMU/debos processes
         run: |
-          sudo apt-get update
-          sudo apt-get install -y debos debootstrap qemu-user-static
+          pkill -f qemu || true
+          pkill -f debos || true
 
-      - name: Run debos build
+      - name: Remove stale lock files
+        run: |
+          find /home/runner/work/secret-project/secret-project -name "*.lck" -delete
+
+      - name: Build image with debos
         run: |
           sudo debos \
-            -t architecture:${{ github.event.inputs.architecture }} \
-            -t suite:${{ github.event.inputs.suite }} \
-            -t image:${{ github.event.inputs.image }} \
-            droidian-kali-phosh.yaml
-
-      # Optionally, you can upload the built image as an artifact
-      - name: Upload image
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ github.event.inputs.image }}
-          path: ${{ github.event.inputs.image }}
+            --artifactdir /home/runner/work/secret-project/secret-project \
+            --template-var architecture:arm64 \
+            --template-var suite:bookworm \
+            --template-var image:droidian-kali-phosh.img \
+            /home/runner/work/secret-project/secret-project/droidian-kali-phosh.yaml \
+            --internal-image /dev/disk/by-fakemachine-label/fakedisk-0 \
+            --internal-image /dev/disk/by-fakemachine-label/fakedisk-1
