@@ -41,12 +41,12 @@ actions:
     chroot: true
     command: |
       # Add Droidian GPG key using modern method
-      wget -qO- https://repo.droidian.org/droidian.gpg | gpg --dearmor > /etc/apt/keyrings/droidian.gpg
+      wget -qO- https://raw.githubusercontent.com/droidian/droidian-archive-keyring/master/droidian/droidian.gpg | gpg --dearmor > /etc/apt/keyrings/droidian.gpg
       
       # Add Droidian repositories with signed-by
       cat > /etc/apt/sources.list.d/droidian.list << EOF
-      deb [signed-by=/etc/apt/keyrings/droidian.gpg] https://repo.droidian.org/bookworm-nightlies bookworm main
-      deb [signed-by=/etc/apt/keyrings/droidian.gpg] https://repo.droidian.org/bookworm-nightlies-generic bookworm main
+      deb [signed-by=/etc/apt/keyrings/droidian.gpg] https://production.repo.droidian.org/ bookworm main
+      deb [signed-by=/etc/apt/keyrings/droidian.gpg] https://staging.repo.droidian.org/ bookworm main
       EOF
 
   - action: apt
@@ -77,8 +77,8 @@ actions:
   - action: apt
     description: Install Droidian specific packages
     packages:
-      - droidian-base-files
-      - adaptation-droidian-api28
+      - droidian-base
+      - adaptation-hybris-api28
       - phosh
       - phosh-mobile-settings
       - calls
