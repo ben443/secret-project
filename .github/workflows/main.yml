@@ -5,40 +5,49 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   build-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      IMAGE_NAME: droidian-kali-phosh-${{ github.run_id }}.img
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: Install debos and dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y debos qemu-system libguestfs-tools fakemachine
+          sudo apt-get install -y --no-install-recommends debos qemu-system libguestfs-tools fakemachine
 
-      - name: Set up unique image name
-        id: vars
-        run: |
-          echo "IMAGE_NAME=droidian-kali-phosh-${GITHUB_RUN_ID}.img" >> $GITHUB_ENV
+      - name: Prepare artifact directory
+        run: mkdir -p artifacts
 
-      - name: Kill leftover QEMU/debos processes
-        run: |
-          pkill -f qemu || true
-          pkill -f debos || true
-
-      - name: Remove stale lock files
-        run: |
-          find /home/runner/work/secret-project/secret-project -name "*.lck" -delete
-
-      - name: Build image with debos
+      - name: Build image
         run: |
           sudo debos \
-            --artifactdir /home/runner/work/secret-project/secret-project \
+            --artifactdir artifacts \
             --template-var architecture:arm64 \
             --template-var suite:bookworm \
-            --template-var image:${IMAGE_NAME} \
-            /home/runner/work/secret-project/secret-project/droidian-kali-phosh.yaml \
+            --template-var "image:${IMAGE_NAME}" \
+            droidian-kali-phosh.yaml \
             --internal-image /dev/disk/by-fakemachine-label/fakedisk-0 \
             --internal-image /dev/disk/by-fakemachine-label/fakedisk-1
+
+      - name: Make image readable by artifact uploader
+        run: sudo chmod a+r "artifacts/${IMAGE_NAME}"
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: droidian-kali-phosh-image
+          path: artifacts/${{ env.IMAGE_NAME }}
+          if-no-files-found: error
+          retention-days: 7
