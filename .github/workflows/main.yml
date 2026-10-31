@@ -39,6 +39,4 @@ jobs:
             --template-var architecture:arm64 \
             --template-var suite:bookworm \
             --template-var image:${IMAGE_NAME} \
-            /home/runner/work/secret-project/secret-project/droidian-kali-phosh.yaml \
-            --internal-image /dev/disk/by-fakemachine-label/fakedisk-0 \
-            --internal-image /dev/disk/by-fakemachine-label/fakedisk-1
+            /home/runner/work/secret-project/secret-project/droidian-kali-phosh.yaml

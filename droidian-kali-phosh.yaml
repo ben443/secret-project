@@ -146,28 +146,6 @@ actions:
       # Clear bash history
       history -c
 
-  - action: image-partition
-    imagename: {{ $image }}
-    imagesize: 8GB
-    partitiontype: msdos
-    mountpoints:
-      - mountpoint: /
-        partition: root
-    partitions:
-      - name: root
-        fs: ext4
-        start: 0%
-        end: 100%
-        flags: [ boot ]
-
-  - action: filesystem-deploy
-    description: Deploy filesystem to image
-
-  - action: run
-    description: Install bootloader
-    postprocess: true
-    command: echo "Bootloader installation would happen here for specific device"
-
   - action: run
     description: Configure system services and mobile optimizations
     chroot: true
