@@ -34,7 +34,7 @@ actions:
       wget -qO- https://archive.kali.org/archive-key.asc | gpg --dearmor > /etc/apt/keyrings/kali-archive.gpg
       
       # Add Kali repository with signed-by
-      echo "deb [signed-by=/etc/apt/keyrings/kali-archive.gpg] http://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/kali.list
+      echo "deb [signed-by=/etc/apt/keyrings/kali-archive.gpg] https://http.kali.org/kali kali-rolling main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/kali.list
 
   - action: run
     description: Add Droidian GPG key and repository
@@ -146,28 +146,6 @@ actions:
       # Clear bash history
       history -c
 
-  - action: image-partition
-    imagename: {{ $image }}
-    imagesize: 8GB
-    partitiontype: msdos
-    mountpoints:
-      - mountpoint: /
-        partition: root
-    partitions:
-      - name: root
-        fs: ext4
-        start: 0%
-        end: 100%
-        flags: [ boot ]
-
-  - action: filesystem-deploy
-    description: Deploy filesystem to image
-
-  - action: run
-    description: Install bootloader
-    postprocess: true
-    command: echo "Bootloader installation would happen here for specific device"
-
   - action: run
     description: Configure system services and mobile optimizations
     chroot: true
@@ -182,11 +160,11 @@ actions:
     chroot: true
     command: |
       # Create droidian user
-      useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev droidian
+      id -u droidian >/dev/null 2>&1 || useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev droidian
       echo "droidian:droidian" | chpasswd
       
       # Create kali user for Kali-specific tools
-      useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev kali
+      id -u kali >/dev/null 2>&1 || useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev kali
       echo "kali:kali" | chpasswd
       
       # Set up sudo without password for mobile convenience

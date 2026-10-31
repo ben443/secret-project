@@ -29,8 +29,13 @@ sudo apt install debos
 ```bash
 git clone <your-repo-url>
 cd droidian-kali-phosh
-sudo debos droidian-kali-phosh.yaml
+sudo bash ./build.sh
 ```
+
+The finished image is written to `artifacts/droidian-kali-phosh.img`.
+The GitHub Actions workflow builds on pushes and pull requests targeting `main`,
+and can also be started manually. Successful builds upload the image as the
+`droidian-kali-phosh-image` artifact for seven days.
 
 ## Build Options
 
@@ -38,13 +43,13 @@ You can customize the build with the following variables:
 
 ```bash
 # Custom architecture (default: arm64)
-sudo debos -t architecture:armhf droidian-kali-phosh.yaml
+sudo bash ./build.sh --architecture armhf
 
 # Custom suite (default: bookworm)
-sudo debos -t suite:bullseye droidian-kali-phosh.yaml
+sudo bash ./build.sh --suite bullseye
 
 # Custom image name (default: droidian-kali-phosh.img)
-sudo debos -t image:my-custom-image.img droidian-kali-phosh.yaml
+sudo bash ./build.sh --image my-custom-image.img
 ```
 
 ## Project Structure
